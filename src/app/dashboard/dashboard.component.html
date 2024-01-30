@@ -1,0 +1,1073 @@
+<!--Header Section-->
+<header [style.background]="selectedColor" class="expressive-header">
+    <h1>Welcome to the COVID-19 Statistics Dashboard</h1>
+    <p>Explore the latest data on cases, deaths, and recoveries worldwide.</p>
+</header>
+
+
+<!--Button Section-->
+<div class="export-buttons">
+    <button mat-button [style.background]="selectedButtonColor" class="export-button" (click)="toggleToolPanel()">
+        <mat-icon>menu</mat-icon>
+    </button>
+    <button mat-raised-button [style.background]="selectedButtonColor" class="export-button"
+        [matMenuTriggerFor]="contextMenu" aria-label="Open context menu" #contextMenuTrigger="matMenuTrigger">
+        <mat-icon>download</mat-icon>
+    </button>
+    <button mat-button [style.background]="selectedButtonColor" class="export-button"
+        [matMenuTriggerFor]="contextSetting">
+        <i class="fas fa-cog"></i>
+    </button>
+
+    <mat-menu #contextSetting="matMenu">
+        <button mat-menu-item [matMenuTriggerFor]="themeSubMenu">
+            <mat-icon>visibility</mat-icon>
+            <span>Theme</span>
+        </button>
+    </mat-menu>
+
+    <mat-menu #themeSubMenu="matMenu">
+        <button mat-menu-item>
+            <mat-icon>color_lens</mat-icon>
+            <span>Heading Color</span>&nbsp;
+            <input type="color" [(ngModel)]="selectedColor" (click)="applyColor('heading')"
+                (click)="$event.stopPropagation()" />
+        </button>
+        <button mat-menu-item>
+            <mat-icon>color_lens</mat-icon>
+            <span>Button Color</span>&nbsp;
+            <input type="color" [(ngModel)]="selectedButtonColor" (click)="applyColor('button')"
+                (click)="$event.stopPropagation()" />
+        </button>
+        <button mat-menu-item>
+            <mat-icon>color_lens</mat-icon>
+            <span>Column Color</span>&nbsp;
+            <input type="color" [(ngModel)]="selectedColumnColor" (click)="applyColor('column')"
+                (click)="$event.stopPropagation()" />
+        </button>
+        <button mat-menu-item>
+            <mat-icon>color_lens</mat-icon>
+            <span>Group Color</span>&nbsp;
+            <input type="color" [(ngModel)]="selectedGroupColor" (click)="applyColor('group')"
+                (click)="$event.stopPropagation()" />
+        </button>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<button mat-raised-button color="primary"
+            (click)="applyColors()">Apply</button>&nbsp;
+        <button mat-raised-button color="warn" (click)="cancelChanges()">Cancel</button>
+    </mat-menu>
+
+
+
+
+    <mat-menu #contextMenu="matMenu">
+        <button mat-menu-item (click)="exportToCSV()">
+            <mat-icon>description</mat-icon>
+            <span>Export as CSV</span>
+        </button>
+        <!-- <button mat-menu-item (click)="exportToPDF()">
+            <mat-icon>picture_as_pdf</mat-icon>
+            <span>Export as PDF</span>
+        </button> -->
+        <button mat-menu-item (click)="exportToExcel()">
+            <mat-icon>table_chart</mat-icon>
+            <span>Export as EXCEL</span>
+        </button>
+    </mat-menu>
+    <button mat-raised-button [style.background]="selectedButtonColor" class="export-button"
+        (click)="openRecordFormDialog()">Add Record</button>
+
+    <!-- Add this section to display the summary -->
+    <button mat-button [style.background]="selectedButtonColor" class="export-button" (click)="toggleSummary()">Show
+        Summary</button>
+    <button mat-button [style.background]="selectedButtonColor" class="export-button" (click)="toggleRange()">Range
+        Selection</button>
+
+
+    <mat-form-field class="filter-field">
+        <mat-label>Filter</mat-label>
+        <input matInput (keyup)="applyFilter($event)" (keyup.enter)="saveRecentSearch()" placeholder="Ex. ium" #input>
+    </mat-form-field>
+    <!-- Show Recent Searches button -->
+    <button mat-button [style.background]="selectedButtonColor" class="export-button" (click)="toggleRecentSearches()">
+        {{ showRecentSearches ? 'Hide Recent Searches' : 'Show Recent Searches' }}
+    </button>
+
+    <!-- Display recent searches -->
+    <div *ngIf="showRecentSearches" class="recent-searches-container">
+        <div class="recent-searches-form">
+            <h3>Recent Searches:</h3>
+            <div class="recent-search-divider"></div>
+            <div class="recent-searches">
+                <button *ngFor="let search of recentSearches" class="recent-search-button"
+                    [class.highlighted]="search === highlightedSearch" (click)="filterBySearch(search)">
+                    {{ search }}
+                    <mat-icon class="delete-icon" (click)="deleteRecentSearch(search)">cancel</mat-icon>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+&nbsp;&nbsp;&nbsp;&nbsp;
+<ng-template #recordFormTemplate>
+
+    <form #recordForm="ngForm">
+        <mat-horizontal-stepper>
+            <!-- Step 1 - Country and Continent -->
+            <mat-step [stepControl]="recordForm.controls['country']">
+                <ng-template matStepLabel>Step 1 - Country and Continent</ng-template>
+
+                <mat-form-field>
+                    <input matInput placeholder="Country" [(ngModel)]="newRecord.country" name="country" required>
+                    <mat-error *ngIf="recordForm.controls['country'].invalid && recordForm.controls['country'].touched">
+                        Country is required.
+                    </mat-error>
+                </mat-form-field>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <mat-form-field>
+                    <input matInput placeholder="Continent" [(ngModel)]="newRecord.continent" name="continent" required>
+                    <mat-error
+                        *ngIf="recordForm.controls['continent'].invalid && recordForm.controls['continent'].touched">
+                        Continent is required.
+                    </mat-error>
+                </mat-form-field><br>
+                <button mat-raised-button color="primary" matStepperNext>Next</button>
+
+            </mat-step>
+
+            <!-- Step 2 - Remaining Fields -->
+            <mat-step [stepControl]="recordForm.controls['cases']">
+                <ng-template matStepLabel>Step 2 - Remaining Fields</ng-template>
+                <mat-form-field>
+                    <input matInput type="number" placeholder="Cases" [(ngModel)]="newRecord.cases" name="cases"
+                        required>
+                    <mat-error *ngIf="recordForm.controls['cases'].invalid && recordForm.controls['cases'].touched">
+                        Cases is required and must be a number.
+                    </mat-error>
+                </mat-form-field>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+                <mat-form-field>
+                    <input matInput type="number" placeholder="Deaths" [(ngModel)]="newRecord.deaths" name="deaths"
+                        required>
+                    <mat-error *ngIf="recordForm.controls['deaths'].invalid && recordForm.controls['deaths'].touched">
+                        Deaths is required and must be a number.
+                    </mat-error>
+                </mat-form-field>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+                <mat-form-field>
+                    <input matInput type="number" placeholder="Recovered" [(ngModel)]="newRecord.recovered"
+                        name="recovered" required>
+                    <mat-error
+                        *ngIf="recordForm.controls['recovered'].invalid && recordForm.controls['recovered'].touched">
+                        Recovered is required and must be a number.
+                    </mat-error>
+                </mat-form-field><br>
+                <mat-form-field>
+                    <input matInput type="number" placeholder="Active" [(ngModel)]="newRecord.active" name="active"
+                        required>
+                    <mat-error *ngIf="recordForm.controls['active'].invalid && recordForm.controls['active'].touched">
+                        Active is required and must be a number.
+                    </mat-error>
+                </mat-form-field>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <mat-form-field>
+                    <input matInput type="number" placeholder="Critical" [(ngModel)]="newRecord.critical"
+                        name="critical" required>
+                    <mat-error
+                        *ngIf="recordForm.controls['critical'].invalid && recordForm.controls['critical'].touched">
+                        Critical is required and must be a number.
+                    </mat-error>
+                </mat-form-field>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <mat-form-field>
+                    <input matInput type="number" placeholder="CasesPerOneMillion"
+                        [(ngModel)]="newRecord.casesPerOneMillion" name="casesPerOneMillion" required>
+                    <mat-error
+                        *ngIf="recordForm.controls['casesPerOneMillion'].invalid && recordForm.controls['casesPerOneMillion'].touched">
+                        CasesPerOneMillion is required and must be a number.
+                    </mat-error>
+                </mat-form-field>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <mat-form-field>
+                    <input matInput type="number" placeholder="DeathsPerOneMillion"
+                        [(ngModel)]="newRecord.deathsPerOneMillion" name="deathsPerOneMillion" required>
+                    <mat-error
+                        *ngIf="recordForm.controls['deathsPerOneMillion'].invalid && recordForm.controls['deathsPerOneMillion'].touched">
+                        DeathsPerOneMillion is required and must be a number.
+                    </mat-error>
+                </mat-form-field>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <mat-form-field>
+                    <input matInput type="number" placeholder="Population" [(ngModel)]="newRecord.population"
+                        name="population" required>
+                    <mat-error
+                        *ngIf="recordForm.controls['population'].invalid && recordForm.controls['population'].touched">
+                        Population is required and must be a number.
+                    </mat-error>
+                </mat-form-field><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <!-- Add other remaining fields here -->
+                <button mat-flat-button color="warn" matStepperPrevious>Back</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button mat-raised-button color="primary" matStepperNext>Next</button>
+
+            </mat-step>
+
+            <!-- Step 3 - Confirmation -->
+            <mat-step>
+                <ng-template matStepLabel>Step 3 - Confirmation</ng-template>
+                <div>
+                    <p>Country: {{ newRecord.country }}</p>
+                    <p>Continent: {{ newRecord.continent }}</p>
+                    <p>Cases: {{ newRecord.cases }}</p>
+                    <p>Deaths: {{ newRecord.deaths }}</p>
+                    <p>Recovered: {{ newRecord.recovered }}</p>
+                    <p>Active: {{ newRecord.active }}</p>
+                    <p>Cases Per One Million: {{ newRecord.CasesPerOneMillion }}</p>
+                    <p>Deaths Per One Million: {{ newRecord.DeathsPerOneMillion }}</p>
+                    <p>Population: {{ newRecord.population }}</p>
+                </div>
+                <button mat-flat-button color="warn" matStepperPrevious>Back</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button mat-raised-button color="primary" color="primary" (click)="addRecord()"
+                    [disabled]="recordForm.invalid">Add</button>
+            </mat-step>
+
+        </mat-horizontal-stepper>
+
+    </form>
+    <!-- <form #recordForm="ngForm">
+      <mat-form-field>
+        <input matInput placeholder="Country" [(ngModel)]="newRecord.country" name="country" required>
+        <mat-error *ngIf="recordForm.controls['country'].invalid && recordForm.controls['country'].touched">
+            Country is required.
+          </mat-error>
+      </mat-form-field>&nbsp;&nbsp;&nbsp;
+  
+      <mat-form-field>
+        <input matInput placeholder="Continent" [(ngModel)]="newRecord.continent" name="continent" required>
+        <mat-error *ngIf="recordForm.controls['continent'].invalid && recordForm.controls['continent'].touched">
+          Continent is required.
+        </mat-error>
+      </mat-form-field>&nbsp;&nbsp;&nbsp;
+  
+      <mat-form-field>
+        <input matInput type="number" placeholder="Cases" [(ngModel)]="newRecord.cases" name="cases" required>
+        <mat-error *ngIf="recordForm.controls['cases'].invalid && recordForm.controls['cases'].touched">
+          Cases is required and must be a number.
+        </mat-error>
+      </mat-form-field>&nbsp;&nbsp;&nbsp;
+  
+      <mat-form-field>
+        <input matInput type="number" placeholder="Deaths" [(ngModel)]="newRecord.deaths" name="deaths" required>
+        <mat-error *ngIf="recordForm.controls['deaths'].invalid && recordForm.controls['deaths'].touched">
+          Deaths is required and must be a number.
+        </mat-error>
+      </mat-form-field>&nbsp;&nbsp;&nbsp;
+  
+      <mat-form-field>
+        <input matInput type="number" placeholder="Recovered" [(ngModel)]="newRecord.recovered" name="recovered" required>
+        <mat-error *ngIf="recordForm.controls['recovered'].invalid && recordForm.controls['recovered'].touched">
+          Recovered is required and must be a number.
+        </mat-error>
+      </mat-form-field>&nbsp;&nbsp;&nbsp;
+  
+      <mat-form-field>
+        <input matInput type="number" placeholder="Active" [(ngModel)]="newRecord.active" name="active" required>
+        <mat-error *ngIf="recordForm.controls['active'].invalid && recordForm.controls['active'].touched">
+          Active is required and must be a number.
+        </mat-error>
+      </mat-form-field>&nbsp;&nbsp;&nbsp;
+  
+      <mat-form-field>
+        <input matInput type="number" placeholder="CasesPerOneMillion" [(ngModel)]="newRecord.casesPerOneMillion" name="casesPerOneMillion" required>
+        <mat-error *ngIf="recordForm.controls['casesPerOneMillion'].invalid && recordForm.controls['casesPerOneMillion'].touched">
+          CasesPerOneMillion is required and must be a number.
+        </mat-error>
+      </mat-form-field>&nbsp;&nbsp;&nbsp;
+  
+      <mat-form-field>
+        <input matInput type="number" placeholder="DeathsPerOneMillion" [(ngModel)]="newRecord.deathsPerOneMillion" name="deathsPerOneMillion" required>
+        <mat-error *ngIf="recordForm.controls['deathsPerOneMillion'].invalid && recordForm.controls['deathsPerOneMillion'].touched">
+          DeathsPerOneMillion is required and must be a number.
+        </mat-error>
+      </mat-form-field>&nbsp;&nbsp;&nbsp;
+  
+      <mat-form-field>
+        <input matInput type="number" placeholder="Population" [(ngModel)]="newRecord.population" name="population" required>
+        <mat-error *ngIf="recordForm.controls['population'].invalid && recordForm.controls['population'].touched">
+          Population is required and must be a number.
+        </mat-error>
+      </mat-form-field>&nbsp;&nbsp;&nbsp;
+  
+      <button mat-raised-button color="primary" (click)="addRecord()" [disabled]="recordForm.invalid">Add</button>&nbsp;&nbsp;&nbsp;
+      <button mat-flat-button color="warn" (click)="toggleAddOption()">Close</button>
+    </form> -->
+
+</ng-template>
+<!--  section to display the summary -->
+<div class="summary" *ngIf="showSummary">
+    <div class="date-picker">
+        <mat-form-field>
+            <mat-label>Choose a date</mat-label>
+            <input matInput [matDatepicker]="picker">
+            <mat-hint>MM/DD/YYYY</mat-hint>
+            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+    </div>
+    <div class="summary-cards">
+        <div class="summary-card">
+            <p>Total Cases: {{ summary.totalCases }}</p>
+        </div>
+        <div class="summary-card">
+            <p>Total Deaths: {{ summary.totalDeaths }}</p>
+        </div>
+        <div class="summary-card">
+            <p>Total Recovered: {{ summary.totalRecovered }}</p>
+        </div>
+        <div class="summary-card">
+            <p>Total Active: {{ summary.totalActive }}</p>
+
+        </div>
+        <div class="export-button-container">
+            <button mat-raised-button class="export-button" (click)="copySummaryToClipboard()" class="tooltip">
+                <i class="fas fa-clipboard"></i>
+                <span class="tooltiptext">Copy to Clipboard</span>
+            </button>
+        </div>
+    </div>
+</div>
+<div></div>
+<div class="range-selection" *ngIf="showRange">
+    <label for="minRange">Min Range:</label>&nbsp;&nbsp;
+    <input type="number" id="minRange" [(ngModel)]="minRange">&nbsp;&nbsp;&nbsp;&nbsp;
+    <label for="maxRange">Max Range:</label>&nbsp;&nbsp;
+    <input type="number" id="maxRange" [(ngModel)]="maxRange">&nbsp;&nbsp;&nbsp;&nbsp;
+    <button mat-raised-button color="primary" (click)="filterByRange()">OK</button>
+</div>
+<div></div>
+
+<div class="table-container">
+    <mat-sidenav-container>
+        <mat-sidenav #toolPanel mode="side" [(opened)]="isToolPanelOpen" class="tool-panel">
+            <!-- Tool Panel Content -->
+            <p>Tool Panel Content</p>
+            <div class="tool-panel-content">
+
+                <mat-slide-toggle [(ngModel)]="toggleColumnVisibility">
+                    Enable Column Selection
+                </mat-slide-toggle>
+
+                <div class="checkboxes" [ngClass]="{'disabled': !toggleColumnVisibility}">
+                    <mat-checkbox [(ngModel)]="showCountryColumn" [disabled]="!toggleColumnVisibility">
+                        Country
+                    </mat-checkbox>
+                    <mat-checkbox [(ngModel)]="showContinentColumn" [disabled]="!toggleColumnVisibility">
+                        Continent
+                    </mat-checkbox>
+                    <mat-checkbox [(ngModel)]="showCasesColumn" [disabled]="!toggleColumnVisibility">
+                        Total Cases
+                    </mat-checkbox>
+                    <mat-checkbox [(ngModel)]="showDeathsColumn" [disabled]="!toggleColumnVisibility">
+                        Total Deaths
+                    </mat-checkbox>
+                    <mat-checkbox [(ngModel)]="showActiveColumn" [disabled]="!toggleColumnVisibility">
+                        Active
+                    </mat-checkbox>
+                    <mat-checkbox [(ngModel)]="showRecoveredColumn" [disabled]="!toggleColumnVisibility">
+                        Recovered
+                    </mat-checkbox>
+                    <mat-checkbox [(ngModel)]="showCriticalColumn" [disabled]="!toggleColumnVisibility">
+                        Critical
+                    </mat-checkbox>
+                    <mat-checkbox [(ngModel)]="showPopulationColumn" [disabled]="!toggleColumnVisibility">
+                        Population
+                    </mat-checkbox>
+                </div>
+
+                <button mat-raised-button color="primary" (click)="applyColumnVisibility()"
+                    [disabled]="!toggleColumnVisibility">
+                    Apply
+                </button>
+
+                <div class="button-container">
+
+                    <mat-form-field>
+                        <input matInput [matDatepicker]="datepicker" placeholder="Select a date"
+                            [(ngModel)]="filteredDate">
+                        <mat-datepicker-toggle matSuffix [for]="datepicker"></mat-datepicker-toggle>
+                        <mat-datepicker #datepicker></mat-datepicker>
+                    </mat-form-field>
+                    <button mat-raised-button color="primary" (click)="applyDateFilter()">Apply Filter</button>
+                </div>
+            </div>
+        </mat-sidenav>
+
+       <!--Tool Panel Section-->
+        <table mat-table *ngIf="filteredData.length > 0; else fullTable" [dataSource]="filteredData"
+            class="mat-elevation-z8 demo-table" matSort>
+
+            <!-- Checkbox Column -->
+            <ng-container matColumnDef="select">
+                <th mat-header-cell cdkDrag *matHeaderCellDef class="highlighted-header">
+                    <mat-checkbox (change)="$event ? toggleAllRows() : null"
+                        [checked]="selection.hasValue() && isAllSelected()"
+                        [indeterminate]="selection.hasValue() && !isAllSelected()" [aria-label]="checkboxLabel()">
+                    </mat-checkbox>
+                </th>
+                <td mat-cell *matCellDef="let row">
+                    <mat-checkbox (click)="$event.stopPropagation()" (change)="$event ? selection.toggle(row) : null"
+                        [checked]="selection.isSelected(row)" [aria-label]="checkboxLabel(row)">
+                    </mat-checkbox>
+                </td>
+            </ng-container>
+
+            <!-- Country Column -->
+            <ng-container *ngIf="showCountryColumn" matColumnDef="country">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header class="highlighted-header"> Country Name </th>
+                <td mat-cell *matCellDef="let element; let rowIndex = index"
+                    (dblclick)="startEditing(element, rowIndex, 'country'); $event.stopPropagation()">
+                    <div *ngIf="!isEditing(rowIndex, 'country')">
+                        {{ element['country'] }}
+                    </div>
+                    <div *ngIf="isEditing(rowIndex, 'country')">
+                        <input type="text" [(ngModel)]="editingData[rowIndex]['country']"
+                            (keydown.enter)="stopEditing(rowIndex, 'country')"
+                            (blur)="stopEditing(rowIndex, 'country')">
+                    </div>
+                </td>
+            </ng-container>
+
+            <!-- Continent Column -->
+            <ng-container *ngIf="showContinentColumn" matColumnDef="continent">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header class="highlighted-header"> Continent Name
+                </th>
+                <td mat-cell *matCellDef="let element; let rowIndex = index"
+                    (dblclick)="startEditing(element, rowIndex, 'continent'); $event.stopPropagation()">
+                    <div *ngIf="!isEditing(rowIndex, 'continent')">
+                        {{ element['continent'] }}
+                    </div>
+                    <div *ngIf="isEditing(rowIndex, 'continent')">
+                        <input type="text" [(ngModel)]="editingData[rowIndex]['continent']"
+                            (keydown.enter)="stopEditing(rowIndex, 'continent')"
+                            (blur)="stopEditing(rowIndex, 'continent')">
+                    </div>
+                </td>
+            </ng-container>
+
+
+
+            <!-- Cases Column -->
+            <ng-container *ngIf="showCasesColumn" matColumnDef="cases">
+                <th mat-header-cell *matHeaderCellDef class="highlighted-header"> Total Cases </th>
+                <td mat-cell *matCellDef="let element"> {{element.cases}} </td>
+            </ng-container>
+
+            <!-- Deaths Column -->
+            <ng-container *ngIf="showDeathsColumn" matColumnDef="deaths">
+                <th mat-header-cell *matHeaderCellDef class="highlighted-header"> Total Deaths </th>
+                <td mat-cell *matCellDef="let element"> {{element.deaths}} </td>
+            </ng-container>
+
+            <ng-container *ngIf="showRecoveredColumn" matColumnDef="recovered">
+                <th mat-header-cell *matHeaderCellDef class="highlighted-header"> Recovered </th>
+                <td mat-cell *matCellDef="let element"> {{element.recovered}} </td>
+            </ng-container>
+
+            <ng-container *ngIf="showActiveColumn" matColumnDef="active">
+                <th mat-header-cell *matHeaderCellDef class="highlighted-header"> Active </th>
+                <td mat-cell *matCellDef="let element"> {{element.active}} </td>
+            </ng-container>
+
+            <ng-container *ngIf="showCriticalColumn" matColumnDef="critical">
+                <th mat-header-cell *matHeaderCellDef class="highlighted-header"> Critical</th>
+                <td mat-cell *matCellDef="let element"> {{element.critical}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="casesPerOneMillion">
+                <th mat-header-cell *matHeaderCellDef class="highlighted-header"> Cases/1M</th>
+                <td mat-cell *matCellDef="let element"> {{element.casesPerOneMillion}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="deathsPerOneMillion">
+                <th mat-header-cell *matHeaderCellDef class="highlighted-header"> Deaths/1M</th>
+                <td mat-cell *matCellDef="let element"> {{element.deathsPerOneMillion}} </td>
+            </ng-container>
+
+            <ng-container *ngIf="showPopulationColumn" matColumnDef="population">
+                <th mat-header-cell *matHeaderCellDef class="highlighted-header"> Population </th>
+                <td mat-cell *matCellDef="let element" [ngClass]="{'highlighted-cell': element.population > 100000}">
+                    {{element.population}}
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="highlighted-header">Action</th>
+                <td mat-cell *matCellDef="let row">
+                    <button mat-icon-button (click)="deleteRecord(row)">
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                </td>
+            </ng-container>
+            <ng-container matColumnDef="overlay">
+                <th mat-header-cell *matHeaderCellDef class="highlighted-header">
+                    Info
+                </th>
+                <td mat-cell *matCellDef="let row">
+                    <mat-icon matTooltip="{{ row.country }}">info</mat-icon>
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="freeze" stickyEnd>
+                <th mat-header-cell *matHeaderCellDef class="highlighted-header">
+                    Freeze
+                </th>
+                <td mat-cell *matCellDef="let row">
+                    <button mat-icon-button (click)="toggleFreezeRow(row)">
+                        <mat-icon>{{ frozenRows.has(row) ? 'lock' : 'lock_open' }}</mat-icon>
+                    </button>
+                </td>
+
+            </ng-container>
+
+            <ng-container matColumnDef="detail">
+                <th mat-header-cell cdkDrag *matHeaderCellDef mat-sort-header class="highlighted-header">Detail View
+                </th>
+                <td mat-cell *matCellDef="let row">
+                    <button mat-icon-button color="primary" (click)="toggleRowDetail(row)">
+                        <mat-icon>{{ selectedRow === row ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </button>
+                    <ng-container *ngIf="selectedRow === row && isRowDetailVisible(row)">
+                        <p><u>Details</u></p>
+                        <p>Country Name:{{row.country}}</p>
+                        <p>Continent Name:{{row.continent}}
+                        <p>
+                        <p>Total Cases: {{ summary.totalCases }}</p>
+                        <p>Total Deaths: {{ summary.totalDeaths }}</p>
+                        <p>Total Recovered: {{ summary.totalRecovered }}</p>
+                        <p>Total Active: {{ summary.totalActive }}</p>
+                        <!-- Add other summary details as needed -->
+                    </ng-container>
+                </td>
+            </ng-container>
+
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true;"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="clickedRows.add(row)"
+                [class.demo-row-is-clicked]="clickedRows.has(row)" (click)="selection.toggle(row)"
+                [class.selected-row]="clickedRows.has(row) || selection.isSelected(row)" (click)="toggleRow(row)"
+                cdkDrag cdkDragLockAxis="y"></tr>
+        </table>
+
+     <!--Normal Table-->
+        <ng-template #fullTable>
+
+            <table mat-table [dataSource]="dataSource" class="mat-elevation-z8 demo-table" matSort cdkDropList
+                (cdkDropListDropped)="drop($event)">
+
+                <!-- Checkbox Column -->
+                <ng-container matColumnDef="select">
+                    <th mat-header-cell *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header">
+                        <mat-checkbox (click)="$event.stopPropagation()" (change)="toggleAllRows()"
+                            [checked]="isAllSelected()" [indeterminate]="selection.hasValue() && !isAllSelected()">
+                        </mat-checkbox>
+                    </th>
+                    <td mat-cell *matCellDef="let row">
+                        <mat-checkbox (click)="$event.stopPropagation()" (change)="toggleRow(row)"
+                            [checked]="selection.isSelected(row)">
+                        </mat-checkbox>
+                    </td>
+                </ng-container>
+
+                <!-- Group: Country & Continent -->
+                <ng-container matColumnDef="countryContinentGroup">
+                    <th mat-header-cell *matHeaderCellDef [attr.colspan]="3" style="text-align: center;"
+                        [style.background]="selectedGroupColor" class="group-header">Country & Continent(Group 1)</th>
+                </ng-container>
+
+                <!-- Group: Other Columns -->
+                <ng-container matColumnDef="otherGroup">
+                    <th mat-header-cell *matHeaderCellDef [attr.colspan]="displayedColumns.length - 2"
+                        [style.background]="selectedGroupColor" class="group-header">Other Columns(Group 2)</th>
+                </ng-container>
+
+
+               <!--Country Column-->
+                <ng-container *ngIf="showCountryColumn" matColumnDef="country" sticky>
+                    <th mat-header-cell cdkDrag *matHeaderCellDef mat-sort-header
+                        [style.background]="selectedColumnColor" class="highlighted-header">
+                        <div class="column-header">
+                            <button mat-icon-button [matMenuTriggerFor]="countryFilterMenu">
+                                <mat-icon class="filter-icon1">filter_list</mat-icon>
+                            </button>
+                            Country Name
+                            <button mat-icon-button class="sort-button">
+                                <mat-icon>swap_vert</mat-icon>
+                            </button>
+                        </div>
+                    </th>
+                    <td mat-cell *matCellDef="let element; let rowIndex = index"
+                        (dblclick)="startEditing(element, rowIndex, 'country'); $event.stopPropagation()"
+                        (mouseenter)="showComment(element)" (mouseleave)="hideComment(element)"
+                        [ngClass]="{ 'highlighted-cells': isFiltered && element.country == filteredValue }"
+                        (mouseenter)="addHoverClass($event.target)" (mouseleave)="removeHoverClass($event.target)">
+                        <div class="cell-content" *ngIf="!isEditing(rowIndex, 'country')">
+                            <button mat-icon-button class="arrow-button" (click)="toggleContinent(element)">
+                                <mat-icon>{{ element.showContinent ? 'keyboard_arrow_up' : 'keyboard_arrow_down'
+                                    }}</mat-icon>
+                            </button>
+                            {{ element['country'] }}
+                            <button mat-icon-button class="comment-button" (click)="addComment(element, 'country')">
+                                <mat-icon>comment</mat-icon>
+                            </button>
+                        </div>
+                        <div *ngIf="isEditing(rowIndex, 'country')">
+                            <input type="text" [(ngModel)]="editingData[rowIndex]['country']"
+                                (keydown.enter)="stopEditing(rowIndex, 'country')"
+                                (blur)="stopEditing(rowIndex, 'country')">
+                        </div>
+                        <div *ngIf="element.comment && element.showComment" class="comment-tooltip">
+                            {{ element.comment }}
+                        </div>
+                        <div class="continent" *ngIf="element.showContinent">
+                            <button mat-icon-button class="arrow-button" (click)="togglePopulation(element)">
+                                <mat-icon>{{ element.showPopulation ? 'keyboard_arrow_up' : 'keyboard_arrow_down'
+                                    }}</mat-icon>
+                            </button>
+                            Continent: {{ element.continent }}
+                        </div>
+                        <div class="population" *ngIf="element.showPopulation">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            Population: {{ element.population }} <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            Cases: {{element.cases}}
+                        </div>
+                    </td>
+
+                </ng-container>
+
+
+                <!-- Country Filter Menu -->
+                <mat-menu #countryFilterMenu="matMenu">
+                    <ng-template matMenuContent>
+                        <div style="padding: 15px;">
+                            <mat-form-field>
+                                <input matInput placeholder="Filter" (keyup)="applyCFilter($event, 'country')"
+                                    (click)="$event.stopPropagation()" />
+                            </mat-form-field>
+                            <!-- Predefined Buttons -->
+                            <!-- <ng-container *ngFor="let button of predefinedButtonss">
+                                <button class="predefined-button" [class.highlighted]="button === selectedButtons"
+                                    (click)="filterSSearch(button)">
+                                    {{ button }}
+                                </button>
+                            </ng-container> -->
+
+                        </div>
+                    </ng-template>
+                </mat-menu>
+
+                <!-- Continent Column -->
+                <ng-container *ngIf="showContinentColumn" matColumnDef="continent">
+                    <th mat-header-cell *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header" [matMenuTriggerFor]="continentFilterMenu" cdkDrag>
+                        <div class="column-header">
+                            <mat-icon class="filter-icon1">filter_list</mat-icon>
+                            Continent Name
+                        </div>
+                    </th>
+                    <td mat-cell *matCellDef="let element; let rowIndex = index"
+                        (dblclick)="startEditing(element, rowIndex, 'continent'); $event.stopPropagation()"
+                        [ngClass]="{ 'highlighted-cells': isFiltered && element.continent == filteredValue }"
+                        (mouseenter)="addHoverClass($event.target)" (mouseleave)="removeHoverClass($event.target)"
+                        cdkDrag>
+                        <div *ngIf="!isEditing(rowIndex, 'continent')">
+                            {{ element['continent'] }}
+                        </div>
+                        <div *ngIf="isEditing(rowIndex, 'continent')">
+                            <input type="text" [(ngModel)]="editingData[rowIndex]['continent']"
+                                (keydown.enter)="stopEditing(rowIndex, 'continent')"
+                                (blur)="stopEditing(rowIndex, 'continent')">
+                        </div>
+                    </td>
+                </ng-container>
+
+                <!-- Continent Filter Menu -->
+                <mat-menu #continentFilterMenu="matMenu">
+                    <ng-template matMenuContent>
+                        <div style="padding: 15px;">
+                            <mat-form-field>
+                                <input matInput placeholder="Filter" (keyup)="applyCFilter($event, 'continent')"
+                                    (click)="$event.stopPropagation()" />
+                            </mat-form-field>
+                            <!-- Predefined Buttons -->
+                            <!-- <ng-container *ngFor="let button of filteredPredefinedButtons">
+                                <button class="predefined-button" [class.highlighted]="button === selectedButton"
+                                    (click)="filterSearch(button)">
+                                    {{ button }}
+                                </button>
+                            </ng-container> -->
+
+                        </div>
+                    </ng-template>
+                </mat-menu>
+
+
+                <!-- Cases Column -->
+                <ng-container *ngIf="showCasesColumn" matColumnDef="cases">
+                    <th mat-header-cell cdkDrag *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header" [matMenuTriggerFor]="casesFilterMenu">
+                        <span class="column-header">
+                            <mat-icon class="filter-icon">filter_list</mat-icon>
+                            <span class="column-name">Total Cases</span>
+                        </span>
+                    </th>
+                    <td mat-cell *matCellDef="let element"
+                        [ngClass]="{ 'highlighted-cells': isFiltered && element.cases == filteredValue }"
+                        [ngClass]="{'highlighted-cel': element.cases>300000}"
+                        (mouseenter)="addHoverClass($event.target)" (mouseleave)="removeHoverClass($event.target)">
+                        {{ element.cases }}
+                    </td>
+                </ng-container>
+
+                <mat-menu #casesFilterMenu="matMenu">
+                    <ng-template matMenuContent>
+                        <mat-form-field>
+                            <input matInput placeholder="Filter" (keyup)="applyCFilter($event, 'cases')"
+                                (click)="$event.stopPropagation()" />
+                        </mat-form-field>
+
+                    </ng-template>
+                </mat-menu>
+
+
+                <!-- Deaths Column -->
+                <ng-container *ngIf="showDeathsColumn" matColumnDef="deaths">
+                    <th mat-header-cell cdkDrag *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header" [matMenuTriggerFor]="deathsFilterMenu">
+                        <span class="column-header">
+                            <mat-icon class="filter-icon">filter_list</mat-icon>
+                            <span class="column-name">Total Deaths</span>
+                        </span>
+                    </th>
+                    <td mat-cell *matCellDef="let element"
+                        [ngClass]="{ 'highlighted-cells': isFiltered && element.deaths == filteredValue }"
+                        [ngClass]="{'highlighted-cel': element.deaths>5000}" (mouseenter)="addHoverClass($event.target)"
+                        (mouseleave)="removeHoverClass($event.target)">
+                        {{ element.deaths }}
+                    </td>
+                </ng-container>
+
+
+
+                <mat-menu #deathsFilterMenu="matMenu">
+                    <ng-template matMenuContent>
+                        <mat-form-field>
+                            <input matInput placeholder="Filter" (keyup)="applyCFilter($event, 'deaths')"
+                                (click)="$event.stopPropagation()" />
+                        </mat-form-field>
+                    </ng-template>
+                </mat-menu>
+
+
+                <!-- Recovered Column -->
+                <ng-container *ngIf="showCasesColumn" matColumnDef="recovered">
+                    <th mat-header-cell cdkDrag *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header" [matMenuTriggerFor]="recoveredFilterMenu">
+                        <span class="column-header">
+                            <mat-icon class="filter-icon">filter_list</mat-icon>
+                            <span class="column-name">Recovered</span>
+                        </span>
+                    </th>
+                    <td mat-cell *matCellDef="let element"
+                        [ngClass]="{ 'highlighted-cells': isFiltered && element.recovered == filteredValue }"
+                        [ngClass]="{'highlighted-cel': element.recovered>200000}"
+                        (mouseenter)="addHoverClass($event.target)" (mouseleave)="removeHoverClass($event.target)">
+
+                        {{ element.recovered }}
+                    </td>
+                </ng-container>
+
+                <mat-menu #recoveredFilterMenu="matMenu">
+                    <ng-template matMenuContent>
+                        <mat-form-field>
+                            <input matInput placeholder="Filter" (keyup)="applyCFilter($event, 'recovered')"
+                                (click)="$event.stopPropagation()" />
+                        </mat-form-field>
+                    </ng-template>
+                </mat-menu>
+
+                <!-- Active Column -->
+                <ng-container *ngIf="showCasesColumn" matColumnDef="active">
+                    <th mat-header-cell cdkDrag *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header" [matMenuTriggerFor]="activeFilterMenu">
+                        <span class="column-header">
+                            <mat-icon class="filter-icon">filter_list</mat-icon>
+                            <span class="column-name">Active</span>
+                        </span>
+                    </th>
+                    <td mat-cell *matCellDef="let element"
+                        [ngClass]="{ 'highlighted-cells': isFiltered && element.active == filteredValue }"
+                        [ngClass]="{'highlighted-cel': element.active>5000}" (mouseenter)="addHoverClass($event.target)"
+                        (mouseleave)="removeHoverClass($event.target)">
+                        {{ element.active }}
+                    </td>
+                </ng-container>
+
+                <mat-menu #activeFilterMenu="matMenu">
+                    <ng-template matMenuContent>
+                        <mat-form-field>
+                            <input matInput placeholder="Filter" (keyup)="applyCFilter($event, 'active')"
+                                (click)="$event.stopPropagation()" />
+                        </mat-form-field>
+                    </ng-template>
+                </mat-menu>
+
+               <!-- Critical Column -->
+                <ng-container *ngIf="showCasesColumn" matColumnDef="critical">
+                    <th mat-header-cell cdkDrag *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header" [matMenuTriggerFor]="criticalFilterMenu">
+                        <span class="column-header">
+                            <mat-icon class="filter-icon">filter_list</mat-icon>
+                            <span class="column-name">Critical</span>
+                        </span>
+                    </th>
+                    <td mat-cell *matCellDef="let element" class="hoverable-cell"
+                        [ngClass]="{ 'highlighted-cells': isFiltered && element.critical == filteredValue }"
+                        [ngClass]="{'highlighted-cel': element.critical > 10}"
+                        (mouseenter)="addHoverClass($event.target)" (mouseleave)="removeHoverClass($event.target)">
+                        {{ element.critical !== 0 ? element.critical : '#' }}
+                    </td>
+                </ng-container>
+
+
+
+                <mat-menu #criticalFilterMenu="matMenu">
+                    <ng-template matMenuContent>
+                        <mat-form-field>
+                            <input matInput placeholder="Filter" (keyup)="applyCFilter($event, 'critical')"
+                                (click)="$event.stopPropagation()" />
+                        </mat-form-field>
+                    </ng-template>
+                </mat-menu>
+
+                <!-- Cases Per One Million Column -->
+                <ng-container *ngIf="showCasesColumn" matColumnDef="casesPerOneMillion">
+                    <th mat-header-cell cdkDrag *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header" [matMenuTriggerFor]="casesPerOneMillionFilterMenu">
+                        <span class="column-header">
+                            <mat-icon class="filter-icon">filter_list</mat-icon>
+                            <span class="column-name">Cases/1M</span>
+                        </span>
+                    </th>
+                    <td mat-cell *matCellDef="let element"
+                        [ngClass]="{ 'highlighted-cells': isFiltered && element.casesPerOneMillion == filteredValue }"
+                        [ngClass]="{'highlighted-cel': element.casesPerOneMillion>50000}"
+                        (mouseenter)="addHoverClass($event.target)" (mouseleave)="removeHoverClass($event.target)">
+                        {{ element.casesPerOneMillion }}
+                    </td>
+                </ng-container>
+
+                <mat-menu #casesPerOneMillionFilterMenu="matMenu">
+                    <ng-template matMenuContent>
+                        <mat-form-field>
+                            <input matInput placeholder="Filter" (keyup)="applyCFilter($event, 'casesPerOneMillion')"
+                                (click)="$event.stopPropagation()" />
+                        </mat-form-field>
+                    </ng-template>
+                </mat-menu>
+
+               <!-- Deaths Per One Million Column -->
+                <ng-container *ngIf="showCasesColumn" matColumnDef="deathsPerOneMillion">
+                    <th mat-header-cell cdkDrag *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header" [matMenuTriggerFor]="deathsPerOneMillionFilterMenu">
+                        <span class="column-header">
+                            <mat-icon class="filter-icon">filter_list</mat-icon>
+                            <span class="column-name">Deaths/1M</span>
+                        </span>
+                    </th>
+                    <td mat-cell *matCellDef="let element"
+                        [ngClass]="{ 'highlighted-cells': isFiltered && element.deathsPerOneMillion == filteredValue }"
+                        [ngClass]="{'highlighted-cel': element.deathsPerOneMillion>2000}"
+                        (mouseenter)="addHoverClass($event.target)" (mouseleave)="removeHoverClass($event.target)">
+                        {{ element.deathsPerOneMillion }}
+                    </td>
+                </ng-container>
+
+                <mat-menu #deathsPerOneMillionFilterMenu="matMenu">
+                    <ng-template matMenuContent>
+                        <mat-form-field>
+                            <input matInput placeholder="Filter" (keyup)="applyCFilter($event, 'deathsPerOneMillion')"
+                                (click)="$event.stopPropagation()" />
+                        </mat-form-field>
+                    </ng-template>
+                </mat-menu>
+
+
+               <!-- Population Column -->
+                <ng-container *ngIf="showPopulationColumn" matColumnDef="population">
+                    <th mat-header-cell cdkDrag *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header"> Population </th>
+                    <td mat-cell *matCellDef="let element" [ngClass]="{'highlighted-cell': element.population}"
+                        (mouseenter)="addHoverClass($event.target)" (mouseleave)="removeHoverClass($event.target)">
+                        {{element.population}}
+                    </td>
+                </ng-container>
+
+
+                <!-- Actions Column -->
+                <ng-container matColumnDef="actions" stickyEnd>
+                    <th mat-header-cell cdkDrag *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header" [matMenuTriggerFor]="actionsMenu">
+                        Action
+                    </th>
+                    <td mat-cell *matCellDef="let row">
+                        <button mat-icon-button [matMenuTriggerFor]="actionsMenu" aria-label="Actions menu">
+                            <mat-icon>more_vert</mat-icon>
+                        </button>
+                        <mat-menu #actionsMenu="matMenu">
+                            <button mat-menu-item (click)="deleteRecord(row)">
+                                <mat-icon>delete</mat-icon>
+                                Delete
+                            </button>
+                            <button mat-menu-item>
+                                <mat-icon>edit</mat-icon>
+                                Edit
+                            </button>
+                        </mat-menu>
+                    </td>
+                </ng-container>
+
+                 <!-- Overlays Column -->
+                <ng-container matColumnDef="overlay">
+                    <th mat-header-cell *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header">
+                        Info
+                    </th>
+                    <td mat-cell *matCellDef="let row">
+                        <mat-icon matTooltip="{{ row.country }}">info</mat-icon>
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="freeze" stickyEnd>
+                    <th mat-header-cell *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header">
+                        Freeze
+                    </th>
+                    <td mat-cell *matCellDef="let row">
+                        <button mat-icon-button (click)="toggleFreezeRow(row)">
+                            <mat-icon>{{ frozenRows.has(row) ? 'lock' : 'lock_open' }}</mat-icon>
+                        </button>
+                    </td>
+
+                </ng-container>
+
+
+                 <!-- Details Column -->
+                <ng-container matColumnDef="detail">
+                    <th mat-header-cell cdkDrag cdkDrag *matHeaderCellDef [style.background]="selectedColumnColor"
+                        class="highlighted-header">Detail View
+                    </th>
+                    <td mat-cell *matCellDef="let row">
+                        <button mat-icon-button color="primary" (click)="toggleRowDetail(row)">
+                            <mat-icon>{{ selectedRow === row ? 'expand_less' : 'expand_more' }}</mat-icon>
+                        </button>
+                        <ng-container *ngIf="selectedRow === row && isRowDetailVisible(row)">
+                            <p><u>Details</u></p>
+                            <p>Country Name:{{row.country}}</p>
+                            <p>Continent Name:{{row.continent}}</p>
+                            <p>Cases: {{ row.cases }}</p>
+                            <p>Deaths: {{ row.deaths }}</p>
+                            <p>Recovered: {{ row.recovered }}</p>
+                            <p>Active: {{ row.active }}</p>
+                            <!-- Add other summary details as needed -->
+                        </ng-container>
+                    </td>
+                </ng-container>
+
+
+
+
+                <!-- Footer row for status bar -->
+                <ng-container matColumnDef="footerRow">
+                    <td mat-footer-cell *matFooterCellDef [attr.colspan]="displayedColumns.length"><b>
+                            Total Rows: {{ dataSource.filteredData.length }}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <b>Count of selected rows: {{ clickedRows.size }}</b>
+                    </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="['countryContinentGroup', 'otherGroup']; sticky: true;"></tr>
+                <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true;"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns; sticky: true" (click)="clickedRows.add(row)"
+                    [class.demo-row-is-clicked]="clickedRows.has(row)"
+                    [class.selected-row]="clickedRows.has(row) || selection.isSelected(row)" (click)="toggleRow(row)"
+                    cdkDrag cdkDragLockAxis="y"></tr>
+                <tr *ngFor="let element of filteredData">
+                    <td>{{ element.continent }}</td>
+                    <!-- Other table cells for other properties -->
+                </tr>
+
+                <tr mat-footer-row *matFooterRowDef="['footerRow']"></tr>
+
+
+                <!-- Row shown when there is no matching data. -->
+                <tr class="mat-row" *matNoDataRow>
+                    <td class="mat-cell" colspan="4">No data matching the filter "{{input.value}}"</td>
+                </tr>
+            </table>
+        </ng-template>
+    </mat-sidenav-container>
+    <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+</div>
+
+<div></div>
+<div></div>
+<div>
+    <h3>
+        Selection Log
+    </h3>
+</div>
+
+<div *ngIf="!clickedRows.size">
+    Selected Country will be logged here
+</div>
+
+<ul>
+    <li *ngFor="let clickedRow of clickedRows">
+        Selected {{clickedRow.country}}
+    </li>
+</ul>
+
+
+<!--Footer-->
+
+<!--FONT AWESOME-->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<!--GOOGLE FONTS-->
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Play&display=swap" rel="stylesheet">
+<footer>
+    <div [style.background]="selectedColor" class="footer">
+        <div class="row">
+            <a href="#"><i class="fa fa-facebook"></i></a>
+            <a href="#"><i class="fa fa-instagram"></i></a>
+            <a href="#"><i class="fa fa-youtube"></i></a>
+            <a href="#"><i class="fa fa-twitter"></i></a>
+        </div>
+
+        <div class="row">
+            <ul>
+                <li><a href="#">Contact us</a></li>
+                <li><a href="#">Our Services</a></li>
+                <li><a href="#">Privacy Policy</a></li>
+                <li><a href="#">Terms & Conditions</a></li>
+                <li><a href="#">Help</a></li>
+            </ul>
+        </div>
+
+        <div class="row">
+            Copyright © 2021 - All rights reserved.
+        </div>
+    </div>
+</footer>

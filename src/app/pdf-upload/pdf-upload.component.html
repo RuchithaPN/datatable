@@ -1,0 +1,11 @@
+<div>
+    <input type="file" (change)="onFileSelected($event)" />
+    <button (click)="uploadPdf()" [disabled]="!selectedFile">Upload PDF</button>
+  </div>
+  
+  <div *ngIf="pdfContent">
+    <hr />
+    <h2>PDF Content:</h2>
+    <pre>{{ pdfContent }}</pre>
+  </div>
+  

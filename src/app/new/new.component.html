@@ -1,0 +1,45 @@
+<!-- src/app/excel-table/excel-table.component.html
+<input type="file" (change)="onFileSelected($event)" accept=".xlsx">
+<table>
+  <thead>
+    <tr>
+      <th>Column 1</th>
+      <th>Column 2</th>
+      <th>Column 3</th> 
+      <th>Column 4</th>
+      
+      Add more headers as needed -->
+    <!-- </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let item of jsonData">
+      <td>{{ item.EEID }}</td>
+      <td>{{ item.Department }}</td>
+      <td>{{ item.Ethnicity }}</td>
+      <td>{{ item.Gender }}</td>
+      Display other columns as needed -->
+    <!-- </tr>
+  </tbody>
+</table> -->
+<!-- src/app/excel-table/excel-table.component.html -->
+
+
+
+  <div>
+    <input type="file" (change)="onFileSelected($event)" />
+    <button (click)="uploadExcel()" [disabled]="!selectedFile">Upload Excel</button>
+  </div>
+  
+  <div *ngIf="excelData.length > 0">
+    <hr />
+    <h2>Excel Data:</h2>
+    <table>
+      <tr *ngFor="let row of excelData">
+        <td *ngFor="let cell of row">{{ cell }}</td>
+      </tr>
+    </table>
+  </div>
+  
+  
+
+  
